@@ -37,7 +37,7 @@ class VGG16TinyImageNet {
             val updater = Nesterovs()
             val cacheMode = CacheMode.NONE
             val workspaceMode = WorkspaceMode.ENABLED
-            val inputShape = longArrayOf(3, 224, 224)
+            val inputShape = longArrayOf(3, 64, 64)
             val cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST
             val numClasses = 200
             val conf =
