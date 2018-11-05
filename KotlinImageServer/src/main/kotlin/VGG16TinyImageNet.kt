@@ -41,8 +41,8 @@ class VGG16TinyImageNet {
 
             print(inputShape)
 
-            val imNetTrain = TinyImageNetDataSetIterator(128, inputShape, DataSetType.TRAIN)
-            val imNetTest = TinyImageNetDataSetIterator(128, inputShape, DataSetType.TEST)
+            val imNetTrain = TinyImageNetDataSetIterator(128, intArrayOf(224, 224), DataSetType.TRAIN)
+            val imNetTest = TinyImageNetDataSetIterator(128, intArrayOf(224, 224), DataSetType.TEST)
 
             log.info("Train model....")
             for (i in 0..15 - 1) {
