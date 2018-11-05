@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer
 import org.deeplearning4j.nn.conf.layers.OutputLayer
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer
 import org.deeplearning4j.nn.graph.ComputationGraph
+import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.util.ModelSerializer
 import org.nd4j.linalg.learning.config.Nesterovs
@@ -45,6 +46,7 @@ class VGG16TinyImageNet {
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .updater(updater)
                             .activation(Activation.RELU)
+                            .weightInit(WeightInit.XAVIER)
                             .cacheMode(cacheMode)
                             .trainingWorkspaceMode(workspaceMode)
                             .inferenceWorkspaceMode(workspaceMode)
