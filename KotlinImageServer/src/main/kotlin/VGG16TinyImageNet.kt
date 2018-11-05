@@ -1,11 +1,15 @@
 import org.deeplearning4j.datasets.fetchers.DataSetType
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator
 import org.deeplearning4j.datasets.iterator.impl.TinyImageNetDataSetIterator
 import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.nn.conf.*
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer
 import org.deeplearning4j.nn.graph.ComputationGraph
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.util.ModelSerializer
+import org.deeplearning4j.zoo.model.AlexNet
+import org.deeplearning4j.zoo.model.LeNet
 import org.deeplearning4j.zoo.model.VGG16
 import org.nd4j.linalg.learning.config.Nesterovs
 import org.slf4j.LoggerFactory
@@ -16,10 +20,10 @@ class VGG16TinyImageNet {
     private val log = LoggerFactory.getLogger(VGG16TinyImageNet::class.java)
 
     @Throws(Exception::class)
-    fun train() : ComputationGraph {
+    fun train() : MultiLayerNetwork {
         val modelFile = File("tinyvgg16.mod")
         if (modelFile.exists()){
-            val model = ModelSerializer.restoreComputationGraph(modelFile)
+            val model = ModelSerializer.restoreMultiLayerNetwork(modelFile)
             return model
         }
         else {
@@ -32,7 +36,7 @@ class VGG16TinyImageNet {
             val workspaceMode = WorkspaceMode.ENABLED
             val cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST
             val numClasses = 200
-            val zooModel = VGG16.builder().numClasses(200).build()
+            val zooModel = AlexNet.builder().numClasses(200).build()
 
             val model = zooModel.init()
             model.init()
@@ -41,8 +45,8 @@ class VGG16TinyImageNet {
 
             print(inputShape)
 
-            val imNetTrain = TinyImageNetDataSetIterator(128, intArrayOf(224, 224), DataSetType.TRAIN)
-            val imNetTest = TinyImageNetDataSetIterator(128, intArrayOf(224, 224), DataSetType.TEST)
+            val imNetTrain = AsyncDataSetIterator(TinyImageNetDataSetIterator(128, intArrayOf(224, 224), DataSetType.TRAIN))
+            val imNetTest = AsyncDataSetIterator(TinyImageNetDataSetIterator(128, intArrayOf(224, 224), DataSetType.TEST))
 
             log.info("Train model....")
             for (i in 0..15 - 1) {
