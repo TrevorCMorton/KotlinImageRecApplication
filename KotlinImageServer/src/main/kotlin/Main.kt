@@ -1,8 +1,8 @@
-import org.deeplearning4j.nn.graph.ComputationGraph
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 
 fun main(args : Array<String>) {
     val vgg16 = AlexNetTinyImageNet()
-    var model : ComputationGraph = vgg16.train()
+    var model : MultiLayerNetwork = vgg16.train()
 }
 
 
