@@ -1,3 +1,4 @@
+import org.deeplearning4j.datasets.fetchers.DataSetType
 import org.deeplearning4j.datasets.iterator.impl.TinyImageNetDataSetIterator
 import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.nn.conf.*
@@ -23,23 +24,25 @@ class VGG16TinyImageNet {
         }
         else {
             //Get the DataSetIterators:
-            val imNetTrain = TinyImageNetDataSetIterator(128)
-            val imNetTest = TinyImageNetDataSetIterator(128)
-
 
             log.info("Build model....")
             val seed = 324L
             val updater = Nesterovs()
             val cacheMode = CacheMode.NONE
             val workspaceMode = WorkspaceMode.ENABLED
-            val inputShape = intArrayOf(3, 64, 64)
             val cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST
             val numClasses = 200
-            val zooModel = VGG16.builder().inputShape(inputShape).numClasses(200).build()
+            val zooModel = VGG16.builder().numClasses(200).build()
 
             val model = zooModel.init()
             model.init()
             model.setListeners(ScoreIterationListener(5))  //print the score with every iteration
+            val inputShape = zooModel.metaData().getInputShape()[0]
+
+            print(inputShape)
+
+            val imNetTrain = TinyImageNetDataSetIterator(128, inputShape, DataSetType.TRAIN)
+            val imNetTest = TinyImageNetDataSetIterator(128, inputShape, DataSetType.TEST)
 
             log.info("Train model....")
             for (i in 0..15 - 1) {
