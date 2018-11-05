@@ -1,8 +1,6 @@
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
-
 fun main(args : Array<String>) {
-    val vgg16 = AlexNetTinyImageNet()
-    var model : MultiLayerNetwork = vgg16.train()
+    val vgg16 = VGG16TinyImageNet()
+    val model = vgg16.train()
 }
 
 
