@@ -194,49 +194,6 @@ class CameraActivity : AppCompatActivity() {
 //        }
     }
 
-    inner class GetClassification : AsyncTask<ByteArray, String, String>() {
-
-        override fun onPreExecute() {
-            // Before doInBackground
-        }
-
-        override fun doInBackground(vararg postData: ByteArray?): String {
-            val serverURL = "https://jsonplaceholder.typicode.com/posts"
-            val url = URL(serverURL)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"
-            connection.connectTimeout = 300000
-            connection.connectTimeout = 300000
-            connection.doOutput = true
-
-            val post: ByteArray? = postData[0]
-
-            connection.setRequestProperty("charset", "utf-8")
-            connection.setRequestProperty("Content-length", post?.size.toString())
-            connection.setRequestProperty("Content-Type", "application/json")
-
-            try {
-                val outputStream = DataOutputStream(connection.outputStream)
-                outputStream.write(post)
-                outputStream.flush()
-            } catch (exception: Exception) {
-
-            }
-
-            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                Toast.makeText(applicationContext, "hello", Toast.LENGTH_LONG).show()
-            }
-
-            return " "
-        }
-
-        override fun onPostExecute(result: String?) {
-            // Done
-        }
-    }
-
-
-
     val MEDIA_TYPE_IMAGE = 1
     val MEDIA_TYPE_VIDEO = 2
 
