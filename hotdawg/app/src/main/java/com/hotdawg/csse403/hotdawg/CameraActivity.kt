@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.hardware.Camera
 import android.net.Uri
+import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -15,16 +16,20 @@ import android.util.Log
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.Toast
+import com.github.kittinunf.fuel.core.ResponseDeserializable
+import com.github.kittinunf.fuel.httpGet
+import com.github.kittinunf.fuel.httpPost
+import com.github.kittinunf.result.Result
+import com.google.gson.Gson
 
 import kotlinx.android.synthetic.main.activity_camera.*
-import java.io.File
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.io.IOException
+import java.io.*
+import java.net.HttpURLConnection
+import java.net.URL
 import java.nio.file.Files.exists
 import java.text.SimpleDateFormat
 import java.util.*
-
+import kotlin.collections.ArrayList
 
 
 class CameraActivity : AppCompatActivity() {
@@ -149,21 +154,84 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    private val mPicture = Camera.PictureCallback { data, _ ->
-        Toast.makeText(applicationContext, "test", Toast.LENGTH_LONG).show()
-        val pictureFile: File = getOutputMediaFile(MEDIA_TYPE_IMAGE) ?: run {
-            Log.d(TAG, ("Error creating media file, check storage permissions"))
-            return@PictureCallback
+    data class Resp(val Data: String = "",
+                    val id: String = "") {
+
+        //User Deserializer
+        class Deserializer : ResponseDeserializable<Resp> {
+            override fun deserialize(content: String) = Gson().fromJson(content, Resp::class.java)
         }
 
-        try {
-            val fos = FileOutputStream(pictureFile)
-            fos.write(data)
-            fos.close()
-        } catch (e: FileNotFoundException) {
-            Log.d(TAG, "File not found: ${e.message}")
-        } catch (e: IOException) {
-            Log.d(TAG, "Error accessing file: ${e.message}")
+    }
+
+    private val mPicture = Camera.PictureCallback { data, _ ->
+        var pack: ArrayList<Pair<String, Any?>> = ArrayList()
+        pack.add(Pair<String, Any>("Data", data))
+        "https://jsonplaceholder.typicode.com/posts".httpPost(pack).responseObject(Resp.Deserializer()) { request, response, result ->
+            when (result) {
+                is Result.Failure -> {
+                    val ex = result.getException()
+                }
+                is Result.Success -> {
+                    val (resp, err) = result
+                    Toast.makeText(applicationContext, resp?.id, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+//        val pictureFile: File = getOutputMediaFile(MEDIA_TYPE_IMAGE) ?: run {
+//            Log.d(TAG, ("Error creating media file, check storage permissions"))
+//            return@PictureCallback
+//        }
+//
+//        try {
+//            val fos = FileOutputStream(pictureFile)
+//            fos.write(data)
+//            fos.close()
+//        } catch (e: FileNotFoundException) {
+//            Log.d(TAG, "File not found: ${e.message}")
+//        } catch (e: IOException) {
+//            Log.d(TAG, "Error accessing file: ${e.message}")
+//        }
+    }
+
+    inner class GetClassification : AsyncTask<ByteArray, String, String>() {
+
+        override fun onPreExecute() {
+            // Before doInBackground
+        }
+
+        override fun doInBackground(vararg postData: ByteArray?): String {
+            val serverURL = "https://jsonplaceholder.typicode.com/posts"
+            val url = URL(serverURL)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.connectTimeout = 300000
+            connection.connectTimeout = 300000
+            connection.doOutput = true
+
+            val post: ByteArray? = postData[0]
+
+            connection.setRequestProperty("charset", "utf-8")
+            connection.setRequestProperty("Content-length", post?.size.toString())
+            connection.setRequestProperty("Content-Type", "application/json")
+
+            try {
+                val outputStream = DataOutputStream(connection.outputStream)
+                outputStream.write(post)
+                outputStream.flush()
+            } catch (exception: Exception) {
+
+            }
+
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                Toast.makeText(applicationContext, "hello", Toast.LENGTH_LONG).show()
+            }
+
+            return " "
+        }
+
+        override fun onPostExecute(result: String?) {
+            // Done
         }
     }
 
