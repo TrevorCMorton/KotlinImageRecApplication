@@ -17,14 +17,12 @@ import android.widget.FrameLayout
 import android.widget.Toast
 
 import kotlinx.android.synthetic.main.activity_camera.*
-import java.io.File
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.io.IOException
 import java.nio.file.Files.exists
 import java.text.SimpleDateFormat
 import java.util.*
-
+import android.os.AsyncTask
+import java.io.*
+import java.net.Socket
 
 
 class CameraActivity : AppCompatActivity() {
@@ -39,19 +37,22 @@ class CameraActivity : AppCompatActivity() {
         // Here, thisActivity is the current activity
         if (ContextCompat.checkSelfPermission(this,
                         Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
 
             // Permission is not granted
             // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                            Manifest.permission.CAMERA)) {
+                            Manifest.permission.CAMERA) && ActivityCompat.shouldShowRequestPermissionRationale(this,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
             } else {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(this,
-                        arrayOf(Manifest.permission.CAMERA),
+                        arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE),
                         1)
 
                 // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
@@ -61,6 +62,19 @@ class CameraActivity : AppCompatActivity() {
         } else {
             // Create an instance of Camera
             mCamera = getCameraInstance()
+            var params = mCamera?.parameters
+            var sizes : List<Camera.Size>?
+            if (params?.supportedVideoSizes != null) {
+                sizes = params?.supportedVideoSizes
+            } else {
+                // Video sizes may be null, which indicates that all the supported
+                // preview sizes are supported for video recording.
+                sizes = params?.supportedPreviewSizes
+            }
+            val maxWidth = sizes?.get(0)?.width
+            val maxHeight = sizes?.get(0)?.height
+            params?.setPictureSize(maxWidth!!, maxHeight!!)
+            Toast.makeText(applicationContext, maxWidth.toString() + ", " + maxHeight.toString(), Toast.LENGTH_LONG).show()
 
             mPreview = mCamera?.let {
                 // Create our Preview view
@@ -150,20 +164,37 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private val mPicture = Camera.PictureCallback { data, _ ->
-        Toast.makeText(applicationContext, "test", Toast.LENGTH_LONG).show()
-        val pictureFile: File = getOutputMediaFile(MEDIA_TYPE_IMAGE) ?: run {
-            Log.d(TAG, ("Error creating media file, check storage permissions"))
-            return@PictureCallback
-        }
+        val task  = SendPhotoTask().execute(data)
+        Toast.makeText(applicationContext, task.get(), Toast.LENGTH_LONG).show()
+//        val pictureFile: File = getOutputMediaFile(MEDIA_TYPE_IMAGE) ?: run {
+//            Log.d(TAG, ("Error creating media file, check storage permissions"))
+//            return@PictureCallback
+//        }
+//
+//        try {
+//            val fos = FileOutputStream(pictureFile)
+//            fos.write(data)
+//            fos.close()
+//        } catch (e: FileNotFoundException) {
+//            Log.d(TAG, "File not found: ${e.message}")
+//        } catch (e: IOException) {
+//            Log.d(TAG, "Error accessing file: ${e.message}")
+//        }
+    }
 
-        try {
-            val fos = FileOutputStream(pictureFile)
-            fos.write(data)
-            fos.close()
-        } catch (e: FileNotFoundException) {
-            Log.d(TAG, "File not found: ${e.message}")
-        } catch (e: IOException) {
-            Log.d(TAG, "Error accessing file: ${e.message}")
+    internal inner class SendPhotoTask : AsyncTask<ByteArray, String, String>() {
+        override fun doInBackground(vararg jpeg: ByteArray): String? {
+            var sock = Socket("137.112.227.174", 10000)
+            var outStream = ObjectOutputStream(sock.getOutputStream())
+            var inStream = ObjectInputStream(sock.getInputStream())
+            outStream.writeObject(jpeg[0])
+            outStream.flush()
+            var mess = inStream.readObject() as String
+            //Toast.makeText(applicationContext, mess, Toast.LENGTH_LONG).show()
+            outStream.close()
+            inStream.close()
+            sock.close()
+            return mess
         }
     }
 
