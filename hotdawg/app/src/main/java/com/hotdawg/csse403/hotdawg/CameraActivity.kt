@@ -166,6 +166,7 @@ class CameraActivity : AppCompatActivity() {
     private val mPicture = Camera.PictureCallback { data, _ ->
         val task  = SendPhotoTask().execute(data)
         Toast.makeText(applicationContext, task.get(), Toast.LENGTH_LONG).show()
+        mCamera?.startPreview()
 //        val pictureFile: File = getOutputMediaFile(MEDIA_TYPE_IMAGE) ?: run {
 //            Log.d(TAG, ("Error creating media file, check storage permissions"))
 //            return@PictureCallback
