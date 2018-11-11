@@ -25,6 +25,7 @@ import com.google.gson.Gson
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.io.*
 import java.net.HttpURLConnection
+import java.net.Socket
 import java.net.URL
 import java.nio.file.Files.exists
 import java.text.SimpleDateFormat
@@ -165,19 +166,30 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private val mPicture = Camera.PictureCallback { data, _ ->
-        var pack: ArrayList<Pair<String, Any?>> = ArrayList()
-        pack.add(Pair<String, Any>("Data", data))
-        "https://jsonplaceholder.typicode.com/posts".httpPost(pack).responseObject(Resp.Deserializer()) { request, response, result ->
-            when (result) {
-                is Result.Failure -> {
-                    val ex = result.getException()
-                }
-                is Result.Success -> {
-                    val (resp, err) = result
-                    Toast.makeText(applicationContext, resp?.id, Toast.LENGTH_LONG).show()
-                }
-            }
-        }
+//        var pack: ArrayList<Pair<String, Any?>> = ArrayList()
+//        pack.add(Pair<String, Any>("Data", data))
+        var sock = Socket("137.112.227.174", 10000)
+        var outStream = DataOutputStream(sock.getOutputStream())
+        var inStream = DataInputStream(sock.getInputStream())
+        outStream.write(data)
+        outStream.flush()
+        var mess = inStream.readUTF()
+        Toast.makeText(applicationContext, mess, Toast.LENGTH_LONG).show()
+        outStream.close()
+        inStream.close()
+        sock.close()
+
+//        "https://jsonplaceholder.typicode.com/posts".httpPost(pack).responseObject(Resp.Deserializer()) { request, response, result ->
+//            when (result) {
+//                is Result.Failure -> {
+//                    val ex = result.getException()
+//                }
+//                is Result.Success -> {
+//                    val (resp, err) = result
+//                    Toast.makeText(applicationContext, resp?.id, Toast.LENGTH_LONG).show()
+//                }
+//            }
+//        }
 //        val pictureFile: File = getOutputMediaFile(MEDIA_TYPE_IMAGE) ?: run {
 //            Log.d(TAG, ("Error creating media file, check storage permissions"))
 //            return@PictureCallback
