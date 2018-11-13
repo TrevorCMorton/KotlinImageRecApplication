@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.hardware.Camera
 import android.net.Uri
-import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -16,20 +15,14 @@ import android.util.Log
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.Toast
-import com.github.kittinunf.fuel.core.ResponseDeserializable
-import com.github.kittinunf.fuel.httpGet
-import com.github.kittinunf.fuel.httpPost
-import com.github.kittinunf.result.Result
-import com.google.gson.Gson
 
 import kotlinx.android.synthetic.main.activity_camera.*
-import java.io.*
-import java.net.HttpURLConnection
-import java.net.URL
 import java.nio.file.Files.exists
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.ArrayList
+import android.os.AsyncTask
+import java.io.*
+import java.net.Socket
 
 
 class CameraActivity : AppCompatActivity() {
@@ -44,19 +37,22 @@ class CameraActivity : AppCompatActivity() {
         // Here, thisActivity is the current activity
         if (ContextCompat.checkSelfPermission(this,
                         Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
 
             // Permission is not granted
             // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                            Manifest.permission.CAMERA)) {
+                            Manifest.permission.CAMERA) && ActivityCompat.shouldShowRequestPermissionRationale(this,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
             } else {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(this,
-                        arrayOf(Manifest.permission.CAMERA),
+                        arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE),
                         1)
 
                 // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
@@ -66,6 +62,19 @@ class CameraActivity : AppCompatActivity() {
         } else {
             // Create an instance of Camera
             mCamera = getCameraInstance()
+            var params = mCamera?.parameters
+            var sizes : List<Camera.Size>?
+            if (params?.supportedVideoSizes != null) {
+                sizes = params?.supportedVideoSizes
+            } else {
+                // Video sizes may be null, which indicates that all the supported
+                // preview sizes are supported for video recording.
+                sizes = params?.supportedPreviewSizes
+            }
+            val maxWidth = sizes?.get(0)?.width
+            val maxHeight = sizes?.get(0)?.height
+            params?.setPictureSize(maxWidth!!, maxHeight!!)
+            Toast.makeText(applicationContext, maxWidth.toString() + ", " + maxHeight.toString(), Toast.LENGTH_LONG).show()
 
             mPreview = mCamera?.let {
                 // Create our Preview view
@@ -154,30 +163,10 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    data class Resp(val Data: String = "",
-                    val id: String = "") {
-
-        //User Deserializer
-        class Deserializer : ResponseDeserializable<Resp> {
-            override fun deserialize(content: String) = Gson().fromJson(content, Resp::class.java)
-        }
-
-    }
-
     private val mPicture = Camera.PictureCallback { data, _ ->
-        var pack: ArrayList<Pair<String, Any?>> = ArrayList()
-        pack.add(Pair<String, Any>("Data", data))
-        "https://jsonplaceholder.typicode.com/posts".httpPost(pack).responseObject(Resp.Deserializer()) { request, response, result ->
-            when (result) {
-                is Result.Failure -> {
-                    val ex = result.getException()
-                }
-                is Result.Success -> {
-                    val (resp, err) = result
-                    Toast.makeText(applicationContext, resp?.id, Toast.LENGTH_LONG).show()
-                }
-            }
-        }
+        val task  = SendPhotoTask().execute(data)
+        Toast.makeText(applicationContext, task.get(), Toast.LENGTH_LONG).show()
+        mCamera?.startPreview()
 //        val pictureFile: File = getOutputMediaFile(MEDIA_TYPE_IMAGE) ?: run {
 //            Log.d(TAG, ("Error creating media file, check storage permissions"))
 //            return@PictureCallback
@@ -193,6 +182,24 @@ class CameraActivity : AppCompatActivity() {
 //            Log.d(TAG, "Error accessing file: ${e.message}")
 //        }
     }
+
+    internal inner class SendPhotoTask : AsyncTask<ByteArray, String, String>() {
+        override fun doInBackground(vararg jpeg: ByteArray): String? {
+            var sock = Socket("137.112.227.174", 10000)
+            var outStream = ObjectOutputStream(sock.getOutputStream())
+            var inStream = ObjectInputStream(sock.getInputStream())
+            outStream.writeObject(jpeg[0])
+            outStream.flush()
+            var mess = inStream.readObject() as String
+            //Toast.makeText(applicationContext, mess, Toast.LENGTH_LONG).show()
+            outStream.close()
+            inStream.close()
+            sock.close()
+            return mess
+        }
+    }
+
+
 
     val MEDIA_TYPE_IMAGE = 1
     val MEDIA_TYPE_VIDEO = 2
