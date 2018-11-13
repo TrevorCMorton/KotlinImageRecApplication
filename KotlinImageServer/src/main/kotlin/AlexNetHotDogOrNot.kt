@@ -21,8 +21,8 @@ class AlexNetHotDogOrNot {
 
     private val log = LoggerFactory.getLogger(AlexNetHotDogOrNot::class.java)
 
-    val trainDataPath = "C:\\Users\\trevo\\Downloads\\seefood\\train"
-    val testDataPath = "C:\\Users\\trevo\\Downloads\\seefood\\test"
+    val trainDataPath = "/home/trevor/Downloads/seefood/train"
+    val testDataPath = "/home/trevor/Downloads/seefood/test"
 
     val batchSize = 64
     val seed = 324L
